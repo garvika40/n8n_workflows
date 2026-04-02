@@ -1,0 +1,694 @@
+{
+  "name": "Topic to Article Research and Generation Pipeline",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "0d9d08a8-f278-483f-99f8-2dbf8c66387f",
+      "name": "Input Topic",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2496,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "513f57e3-5d79-49a1-8eb0-6719143a8e96",
+      "name": "OpenAI Model - Keywords",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -2272,
+        304
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": " "
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n\t\"type\": \"object\",\n\t\"properties\": {\n\t\t\"keywords\": {\n\t\t\t\"type\": \"array\",\n\t\t\t\"items\": {\n\t\t\t\t\"type\": \"string\"\n\t\t\t}\n\t\t},\n\t\t\"long_tail\": {\n\t\t\t\"type\": \"array\",\n\t\t\t\"items\": {\n\t\t\t\t\"type\": \"string\"\n\t\t\t}\n\t\t},\n\t\t\"questions\": {\n\t\t\t\"type\": \"array\",\n\t\t\t\"items\": {\n\t\t\t\t\"type\": \"string\"\n\t\t\t}\n\t\t}\n\t}\n}"
+      },
+      "id": "05b69a74-6e82-4f22-9f04-96b52a99bab6",
+      "name": "JSON Output Parser - Keywords",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -2144,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "cefdb7ac-7dd7-40fc-85d2-9c6f7b5d3dd8",
+      "name": "OpenAI Model - Search",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -1920,
+        304
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": " "
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n\t\"type\": \"object\",\n\t\"properties\": {\n\t\t\"search_queries\": {\n\t\t\t\"type\": \"array\",\n\t\t\t\"items\": {\n\t\t\t\t\"type\": \"string\"\n\t\t\t}\n\t\t}\n\t}\n}"
+      },
+      "id": "bc1c89e2-7d5e-4ceb-89e9-fc92de1d6169",
+      "name": "JSON Output Parser - Search",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -1792,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.search_queries",
+        "options": {}
+      },
+      "id": "1c680f47-7496-44a3-a883-58eb10e6e746",
+      "name": "Split Search Queries",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -1568,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "b032ed22-a837-4f17-8964-a3aac1669bb8",
+      "name": "OpenAI Model - Search Agent",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -1344,
+        304
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": " "
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "80a5eb51-e9fe-4996-a65e-fb18be8696ec",
+      "name": "OpenAI Model - Cleaner",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -704,
+        240
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": " "
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "articles",
+        "options": {}
+      },
+      "id": "c3a8c552-e77c-40a2-ae66-7d832fd16f91",
+      "name": "Combine All Articles",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "id"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "053544b0-dd8f-4b55-ba24-b0f1bc1da31c",
+      "name": "OpenAI Model - Summarizer",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -80,
+        304
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n\t\"type\": \"object\",\n\t\"properties\": {\n\t\t\"insights\": {\n\t\t\t\"type\": \"array\",\n\t\t\t\"items\": {\n\t\t\t\t\"type\": \"string\"\n\t\t\t}\n\t\t},\n\t\t\"themes\": {\n\t\t\t\"type\": \"array\",\n\t\t\t\"items\": {\n\t\t\t\t\"type\": \"string\"\n\t\t\t}\n\t\t},\n\t\t\"unique_points\": {\n\t\t\t\"type\": \"array\",\n\t\t\t\"items\": {\n\t\t\t\t\"type\": \"string\"\n\t\t\t}\n\t\t},\n\t\t\"statistics\": {\n\t\t\t\"type\": \"array\",\n\t\t\t\"items\": {\n\t\t\t\t\"type\": \"string\"\n\t\t\t}\n\t\t},\n\t\t\"gaps\": {\n\t\t\t\"type\": \"array\",\n\t\t\t\"items\": {\n\t\t\t\t\"type\": \"string\"\n\t\t\t}\n\t\t}\n\t}\n}"
+      },
+      "id": "940c5e02-b34b-4062-a6ea-213633bf4f28",
+      "name": "JSON Output Parser - Summary",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        64,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "topic",
+              "value": "={{ $(\"Input Topic\").item.json.topic }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "article",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "word_count",
+              "value": "={{ $json.output.split(\" \").length }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f66d7978-4202-44e5-8037-ef00d0460a6f",
+      "name": "Format Final Article",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        624,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.topic }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an SEO strategist. Generate 10 high-intent search keywords, 5 long-tail keywords, and 5 \"People Also Ask\" style questions based on the input topic."
+        }
+      },
+      "id": "7c5c901b-7917-4f6b-8fad-aeda3191fd13",
+      "name": "Keyword Expansion Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -2272,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Topic: {{ $(\"Input Topic\").item.json.topic }}\n\nKeywords: {{ $json.output }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a search optimization assistant. Select the best 3 search queries that will return high-quality blog/article results."
+        }
+      },
+      "id": "d5b0d0c7-309e-402c-b16b-2a0529c7508c",
+      "name": "Search Query Builder Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -1920,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json[\"output.search_queries\"] }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a research assistant. Use the search tool to find information about the given query. The tool will return summaries and content. Extract the 3 most relevant content summaries and return them as a JSON object with an array under the key \"summaries\". Example: {\"summaries\": [\"summary1\", \"summary2\", \"summary3\"]}"
+        }
+      },
+      "id": "688cb1b9-d0f9-4f04-a267-e159b25cb439",
+      "name": "Search Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -1296,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json[\"output.summaries\"] }}",
+        "options": {
+          "systemMessage": "You are a content cleaner. Review the following summary and ensure it is clean, well-structured, and focused on the main points. Remove any irrelevant information and return clean readable text only."
+        }
+      },
+      "id": "f2f8b078-58de-4bfe-a81d-a1e14e024c61",
+      "name": "Content Cleaner Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -656,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.articles }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a research analyst. Extract key insights (bullet points), common themes across sources, unique ideas from each source, important data/statistics, and content gaps or missing angles from the provided articles."
+        }
+      },
+      "id": "60a96479-7fb2-466a-a4d1-0467b6b42cff",
+      "name": "Summarization Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -80,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Topic: {{ $(\"Input Topic\").item.json.topic }} Research Summary: {{ $json.output }}",
+        "options": {
+          "systemMessage": "You are an expert blog writer. Write a high-quality, engaging article (1000-1500 words) based on the research provided. Use a clear, engaging tone. Include strong introduction and conclusion. Use subheadings (H2, H3). Add examples where useful. Fill content gaps creatively. Do NOT mention sources explicitly. Make it original and human-like."
+        }
+      },
+      "id": "2a99fd55-d819-44be-9798-0586b53da604",
+      "name": "Article Generation Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        272,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        352,
+        304
+      ],
+      "id": "ef67380e-6790-4121-a7a0-46bcbbeeef6b",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": " "
+        }
+      }
+    },
+    {
+      "parameters": {
+        "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavilyTool",
+      "typeVersion": 1,
+      "position": [
+        -1216,
+        304
+      ],
+      "id": "e1e1d5c5-dcdc-46ea-94ba-9617e6b66bce",
+      "name": "Search in Tavily",
+      "credentials": {
+        "tavilyApi": {
+          "id": "",
+          "name": " "
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n\t\"type\": \"object\",\n\t\"properties\": {\n\t\t\"summaries\": {\n\t\t\t\"type\": \"array\",\n\t\t\t\"items\": {\n\t\t\t\t\"type\": \"string\"\n\t\t\t}\n\t\t}\n\t}\n}"
+      },
+      "id": "0c330d94-e522-4905-a549-afbd615c0f80",
+      "name": "JSON Output Parser - Research",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -1088,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.summaries",
+        "options": {}
+      },
+      "id": "418c42a7-b7a1-4bee-a3c5-8876e7449bcd",
+      "name": "Extract Summaries",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -880,
+        80
+      ]
+    }
+  ],
+  "pinData": {
+    "Input Topic": [
+      {
+        "json": {
+          "topic": "AI and Ethics"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Input Topic": {
+      "main": [
+        [
+          {
+            "node": "Keyword Expansion Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Model - Keywords": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Keyword Expansion Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Output Parser - Keywords": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Keyword Expansion Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Model - Search": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Search Query Builder Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Output Parser - Search": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Search Query Builder Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Search Queries": {
+      "main": [
+        [
+          {
+            "node": "Search Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Model - Search Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Search Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Model - Cleaner": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Content Cleaner Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine All Articles": {
+      "main": [
+        [
+          {
+            "node": "Summarization Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Model - Summarizer": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summarization Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Output Parser - Summary": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Summarization Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keyword Expansion Agent": {
+      "main": [
+        [
+          {
+            "node": "Search Query Builder Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Query Builder Agent": {
+      "main": [
+        [
+          {
+            "node": "Split Search Queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Agent": {
+      "main": [
+        [
+          {
+            "node": "Extract Summaries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Cleaner Agent": {
+      "main": [
+        [
+          {
+            "node": "Combine All Articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarization Agent": {
+      "main": [
+        [
+          {
+            "node": "Article Generation Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Article Generation Agent": {
+      "main": [
+        [
+          {
+            "node": "Format Final Article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Article Generation Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search in Tavily": {
+      "ai_tool": [
+        [
+          {
+            "node": "Search Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Output Parser - Research": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Search Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Summaries": {
+      "main": [
+        [
+          {
+            "node": "Content Cleaner Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Final Article": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a4bcfcf5-41a8-441f-b647-c49fa590aba4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a6f1e3a67a066f4a17ce978c2d042a6a75f6cbc840644469f1824e7dced6c68c"
+  },
+  "id": "EyziSmxdnuMwbuAX",
+  "tags": []
+}

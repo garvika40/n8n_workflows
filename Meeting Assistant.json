@@ -1,0 +1,317 @@
+{
+  "name": "Meeting Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -192,
+        80
+      ],
+      "id": "022a94f5-03cc-43e8-be5e-d5166e820506",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://public-api.granola.ai/v1/notes",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "created_after",
+              "value": "={{ $json.start }}"
+            },
+            {
+              "name": "created_before",
+              "value": "={{ $json.end }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        256,
+        80
+      ],
+      "id": "bc1cded7-1a31-4ca7-89cf-3af0304ed2ad",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get today's boundaries in ISO 8601 format\nconst today = new Date();\n\nconst start = new Date(\n  today.getFullYear(),\n  today.getMonth(),\n  today.getDate(),\n  0, 0, 0, 0\n).toISOString();\n\nconst end = new Date(\n  today.getFullYear(),\n  today.getMonth(),\n  today.getDate(),\n  23, 59, 59, 999\n).toISOString();\n\nreturn [{ json: { start, end } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        80
+      ],
+      "id": "3479bfa9-b722-42bc-b932-28c4f12b881d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1376,
+        -64
+      ],
+      "id": "40c4fe21-3a83-4a80-b154-070097a95f0e",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "url": "=https://public-api.granola.ai/v1/notes/{{ $json.notes[0].id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "include",
+              "value": "transcript"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        992,
+        96
+      ],
+      "id": "af2800fa-8ebc-4959-829e-1e0f26440d45",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        480,
+        80
+      ],
+      "id": "5858b118-452c-4d67-a939-fe27fa1b5f8b",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a meeting assistant that extracts action items"
+            },
+            {
+              "content": "=Meeting{{ $json.title }}:  — Transcript: {{ $json.summary_text }} - Transcript - {{ $json.transcript }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 1000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        720,
+        416
+      ],
+      "id": "6a95baae-7cc6-4bc8-aeda-e8014bd1e86f",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": " "
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const meetings = $input.all().map(i => i.json).filter(m => !m.error);\n\nconst sections = meetings.map(m => {\n\n  const output = m.output || [];\n\n  // Text is at output[0].content[0].text  ← this is the fix\n  const rawText = output\n    .filter(o => o.type === 'message')\n    .flatMap(o => o.content || [])\n    .filter(c => c.type === 'output_text')\n    .map(c => c.text)\n    .join('\\n')\n    .trim();\n\n  const cleanText = rawText\n    .replace(/\\*\\*(.+?)\\*\\*/g, '$1')\n    .replace(/### /g, '')\n    .replace(/## /g, '')\n    .replace(/# /g, '')\n    .replace(/\\n   - /g, '\\n  • ')\n    .replace(/\\n- /g, '\\n  • ');\n\n  const title = m.title || 'Untitled meeting';\n  const summary = m.summary || '';\n\n  return '📅 ' + title + (summary ? '\\n' + summary : '') + '\\n\\n' + cleanText;\n\n}).join('\\n\\n---\\n\\n');\n\nconst date = new Date().toDateString();\nconst count = meetings.length;\nconst subject = 'Meeting tasks — ' + date + ' (' + count + ' meetings)';\nconst body = 'Daily meeting summary — ' + date + '\\n\\n' + sections;\n\nreturn [{ json: { subject, body, count } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1584,
+        -64
+      ],
+      "id": "b7de817a-146c-46fd-ae17-a34cedfaf796",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "sendTo": "example@gmail.com",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1792,
+        -64
+      ],
+      "id": "1278bcbb-eafa-4af1-8a4f-b1646fc82dc1",
+      "name": "Send a message",
+      "webhookId": "40be7dda-ee54-4a89-8f86-c4835bc05014",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": ""
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "871ed525-c943-4bd5-bc6d-a0c51dad3c81",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a6f1e3a67a066f4a17ce978c2d042a6a75f6cbc840644469f1824e7dced6c68c"
+  },
+  "id": "IBKWtSofJtfhkpsQ",
+  "tags": []
+}
