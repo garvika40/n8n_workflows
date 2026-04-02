@@ -9,10 +9,7 @@ This n8n workflow takes a topic as input and fully automates the process of rese
 ## What It Does
 
 
-````
-<img width="1004" height="208" alt="image" src="https://github.com/user-attachments/assets/cf1b7489-c97e-4b8e-9b3e-53ecac317a48" />
 
-````
 
 
 ```
